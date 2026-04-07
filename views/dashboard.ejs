@@ -1,0 +1,131 @@
+<%- include('partials/header') %>
+
+<main>
+  <section class="page-hero page-hero--sm">
+    <div class="container">
+      <div class="dashboard-welcome">
+        <div class="user-avatar-lg">
+          <% if (user.avatar) { %>
+            <img src="<%= user.avatar %>" alt="<%= user.name %>" />
+          <% } else { %>
+            <%= user.name.charAt(0).toUpperCase() %>
+          <% } %>
+        </div>
+        <div>
+          <p class="page-eyebrow">Welcome back,</p>
+          <h1 class="page-title"><%= user.name %></h1>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="dashboard-grid">
+
+        <!-- Quick Actions -->
+        <div class="dashboard-actions">
+          <a href="/events/new" class="action-card action-card--primary">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span>Create Event</span>
+          </a>
+          <a href="/explore" class="action-card">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span>Explore</span>
+          </a>
+          <a href="/profile" class="action-card">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Profile</span>
+          </a>
+        </div>
+
+        <!-- My Events -->
+        <div class="dashboard-col">
+          <div class="section-header section-header--sm">
+            <h2 class="section-title">My Events</h2>
+            <a href="/events/new" class="link-arrow">New →</a>
+          </div>
+          <% if (myEvents.length === 0) { %>
+            <div class="empty-state">
+              <p>You haven't created any events yet.</p>
+              <a href="/events/new" class="btn-primary">Create your first event</a>
+            </div>
+          <% } else { %>
+            <div class="list-events">
+              <% myEvents.forEach(event => { %>
+                <div class="list-event-item">
+                  <div class="list-event-info">
+                    <span class="list-event-status list-event-status--<%= event.status %>"><%= event.status %></span>
+                    <a href="/events/<%= event._id %>" class="list-event-title"><%= event.title %></a>
+                    <span class="list-event-date"><%= new Date(event.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) %></span>
+                  </div>
+                  <div class="list-event-actions">
+                    <a href="/events/<%= event._id %>/edit" class="btn-icon" title="Edit">✎</a>
+                    <button class="btn-icon btn-icon--danger" onclick="deleteEvent('<%= event._id %>')" title="Delete">✕</button>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Events I'm Attending -->
+        <div class="dashboard-col">
+          <div class="section-header section-header--sm">
+            <h2 class="section-title">Attending</h2>
+            <a href="/explore" class="link-arrow">Discover →</a>
+          </div>
+          <% if (joined.length === 0) { %>
+            <div class="empty-state">
+              <p>You haven't joined any events yet.</p>
+              <a href="/explore" class="btn-ghost">Explore Events</a>
+            </div>
+          <% } else { %>
+            <div class="list-events">
+              <% joined.forEach(event => { %>
+                <div class="list-event-item">
+                  <div class="list-event-info">
+                    <a href="/events/<%= event._id %>" class="list-event-title"><%= event.title %></a>
+                    <span class="list-event-date">
+                      <%= new Date(event.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) %>
+                      &nbsp;·&nbsp; by <%= event.organizer ? event.organizer.name : '' %>
+                    </span>
+                  </div>
+                  <button class="btn-icon btn-icon--danger" onclick="leaveEvent('<%= event._id %>')" title="Leave">✕</button>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('partials/footer') %>
+
+<script>
+  async function deleteEvent(id) {
+    if (!confirm('Delete this event? This cannot be undone.')) return;
+    const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+    const d   = await res.json();
+    if (d.success) { showToast('Event deleted', 'success'); setTimeout(() => location.reload(), 1000); }
+    else           showToast(d.message || 'Failed to delete', 'error');
+  }
+
+  async function leaveEvent(id) {
+    if (!confirm('Leave this event?')) return;
+    const res = await fetch(`/events/${id}/leave`, { method: 'POST' });
+    const d   = await res.json();
+    if (d.success) { showToast('Left event', 'info'); setTimeout(() => location.reload(), 1000); }
+    else           showToast(d.message || 'Failed', 'error');
+  }
+</script>

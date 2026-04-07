@@ -1,0 +1,124 @@
+<%- include('partials/header') %>
+
+<main>
+  <!-- ─── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-orb hero-orb--1"></div>
+      <div class="hero-orb hero-orb--2"></div>
+      <div class="hero-orb hero-orb--3"></div>
+    </div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Your city is waiting</p>
+      <h1 class="hero-heading">
+        Find events that<br />
+        <em>move you</em>
+      </h1>
+      <p class="hero-sub">
+        Discover meetups, workshops, and experiences near you — powered by real locations and real people.
+      </p>
+      <div class="hero-actions">
+        <a href="/explore" class="btn-primary btn--large">Explore Events</a>
+        <% if (!user) { %>
+          <a href="/auth/register" class="btn-ghost btn--large">Host an Event</a>
+        <% } else { %>
+          <a href="/events/new" class="btn-ghost btn--large">Create Event</a>
+        <% } %>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong><%= featured.length %>+</strong><span>Events this week</span></div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat"><strong>100%</strong><span>Real locations</span></div>
+        <div class="hero-stat-divider"></div>
+        <div class="hero-stat"><strong>Free</strong><span>To join</span></div>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ─── Featured Events ───────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="section-eyebrow">Handpicked for you</span>
+          <h2 class="section-title">Upcoming Events</h2>
+        </div>
+        <a href="/explore" class="link-arrow">View all →</a>
+      </div>
+
+      <% if (featured.length === 0) { %>
+        <div class="empty-state">
+          <p>No upcoming events yet. <a href="/events/new">Be the first to create one!</a></p>
+        </div>
+      <% } else { %>
+        <div class="events-grid">
+          <% featured.forEach(event => { %>
+            <%- include('partials/eventCard', { event }) %>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- ─── Categories ────────────────────────────────────────────────────── -->
+  <section class="section section--dark">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="section-eyebrow">Browse by interest</span>
+          <h2 class="section-title">Categories</h2>
+        </div>
+      </div>
+      <div class="categories-grid">
+        <% ['Technology','Arts','Sports','Food','Music','Business','Education','Social'].forEach(cat => { %>
+          <a href="/explore?category=<%= cat %>" class="category-card category-card--<%= cat.toLowerCase() %>">
+            <span class="category-name"><%= cat %></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Events Near Me ──────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="section-eyebrow">Based on your location</span>
+          <h2 class="section-title">Events Near You</h2>
+        </div>
+        <a href="/nearby" class="link-arrow">Explore nearby →</a>
+      </div>
+      <div class="near-me-cta">
+        <div class="near-me-cta-left">
+          <div class="near-me-icon">📍</div>
+          <div>
+            <h3>Find events happening around you</h3>
+            <p>Discover meetups, workshops and gatherings near your location — or find the perfect spot to host your own.</p>
+          </div>
+        </div>
+        <a href="/nearby" class="btn-primary btn--large">Show Events Near Me</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ────────────────────────────────────────────────────────────── -->
+  <% if (!user) { %>
+  <section class="section cta-section">
+    <div class="container">
+      <div class="cta-card">
+        <h2>Ready to host your own event?</h2>
+        <p>Join GatherSpot and bring people together around your passion, project, or place.</p>
+        <a href="/auth/register" class="btn-primary btn--large">Get Started — It's Free</a>
+      </div>
+    </div>
+  </section>
+  <% } %>
+</main>
+
+<%- include('partials/footer') %>

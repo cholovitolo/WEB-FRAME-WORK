@@ -1,0 +1,465 @@
+<%- include('../partials/header') %>
+
+<main>
+  <section class="page-hero page-hero--sm">
+    <div class="container">
+      <a href="/dashboard" class="back-link">← Dashboard</a>
+      <h1 class="page-title">Create an Event</h1>
+      <p class="page-sub">Choose a real location, set a date, and invite the world.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container container--narrow">
+      <div id="formError" class="alert alert--error" style="display:none"></div>
+
+      <div class="form-card">
+
+        <!-- Title & Category -->
+        <div class="form-row">
+          <div class="form-group form-group--grow">
+            <label class="form-label" for="title">Event Title *</label>
+            <input type="text" id="title" class="form-input" placeholder="What's happening?" maxlength="100" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="category">Category *</label>
+            <select id="category" class="form-select">
+              <% categories.forEach(c => { %><option value="<%= c %>"><%= c %></option><% }) %>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label" for="description">Description *</label>
+          <textarea id="description" class="form-textarea" rows="5" placeholder="Tell people what to expect..." maxlength="2000"></textarea>
+          <span class="char-count" id="descCount">0 / 2000</span>
+        </div>
+
+        <!-- Dates -->
+        <div class="form-row">
+          <div class="form-group form-group--grow">
+            <label class="form-label" for="date">Start Date & Time *</label>
+            <input type="datetime-local" id="date" class="form-input" required />
+          </div>
+          <div class="form-group form-group--grow">
+            <label class="form-label" for="endDate">End Date & Time</label>
+            <input type="datetime-local" id="endDate" class="form-input" />
+          </div>
+        </div>
+
+        <!-- Location Search -->
+        <div class="form-group">
+          <label class="form-label" for="locationSearch">
+            Location * <span class="label-hint">(powered by Google Places)</span>
+          </label>
+          <div class="places-search-wrap">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <input type="text" id="locationSearch" class="form-input" placeholder="Search for a venue or address..." autocomplete="off" />
+            <div class="places-dropdown" id="placesDropdown"></div>
+          </div>
+
+          <!-- Selected location confirmation -->
+          <div id="selectedLocation" class="selected-location" style="display:none">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span id="selectedLocationText"></span>
+            <button type="button" onclick="clearLocation()" class="clear-location">×</button>
+          </div>
+
+          <!-- Place info card shown after selection -->
+          <div id="placeInfoCard" class="place-info-card" style="display:none">
+            <div class="place-info-photos" id="placePhotos"></div>
+            <div class="place-info-details">
+              <div class="place-info-header">
+                <div>
+                  <h4 id="placeInfoName"></h4>
+                  <p id="placeInfoAddress"></p>
+                </div>
+                <div id="placeInfoRating" class="place-rating"></div>
+              </div>
+              <p id="placeInfoSummary" class="place-summary"></p>
+              <div id="placeInfoHours" class="place-hours"></div>
+              <div class="place-info-links">
+                <a id="placeInfoMaps" href="#" target="_blank" class="place-link">Open in Maps ↗</a>
+                <a id="placeInfoWebsite" href="#" target="_blank" class="place-link" style="display:none">Website ↗</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden fields -->
+          <input type="hidden" id="placeId" />
+          <input type="hidden" id="placeName" />
+          <input type="hidden" id="placeAddress" />
+          <input type="hidden" id="placeLat" />
+          <input type="hidden" id="placeLng" />
+          <input type="hidden" id="placePhoto" />
+        </div>
+
+        <!-- Max Attendees & Visibility -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="maxAttendees">Max Attendees <span class="label-hint">(0 = unlimited)</span></label>
+            <input type="number" id="maxAttendees" class="form-input" value="0" min="0" max="10000" />
+          </div>
+          <div class="form-group form-group--center">
+            <label class="form-label">Visibility</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="isPublic" checked />
+              <span class="toggle-track"></span>
+              <span class="toggle-label">Public event</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-group">
+          <label class="form-label" for="tags">Tags <span class="label-hint">(comma separated)</span></label>
+          <input type="text" id="tags" class="form-input" placeholder="networking, outdoor, beginner-friendly" />
+        </div>
+
+        <div class="form-actions">
+          <a href="/dashboard" class="btn-ghost">Cancel</a>
+          <button id="submitBtn" class="btn-primary btn--large">
+            <span class="btn-text">Publish Event</span>
+            <span class="btn-loader" style="display:none">Publishing...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+
+<style>
+.place-info-card {
+  margin-top: 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+
+.place-info-photos {
+  display: flex;
+  gap: 4px;
+  height: 180px;
+  overflow: hidden;
+}
+.place-info-photos img {
+  flex: 1;
+  object-fit: cover;
+  min-width: 0;
+  transition: transform .3s ease;
+}
+.place-info-photos img:hover { transform: scale(1.03); }
+.place-info-photos .photo-placeholder {
+  flex: 1;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.place-info-details { padding: 18px 20px; }
+.place-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.place-info-header h4 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin-bottom: 3px;
+}
+.place-info-header p { font-size: 0.8rem; color: var(--text-muted); }
+
+.place-rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+
+.place-summary { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+
+.place-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+.place-hours span { font-size: 0.78rem; color: var(--text-faint); }
+
+.place-info-links { display: flex; gap: 14px; }
+.place-link { font-size: 0.82rem; color: var(--gold); }
+.place-link:hover { color: var(--gold-light); }
+</style>
+
+<script>
+  // ─── Pre-fill from URL params (from Near Me page — Google Places or Ticketmaster) ──
+  const urlParams = new URLSearchParams(window.location.search);
+  const pName       = urlParams.get('placeName')  || '';
+  const pAddr       = urlParams.get('address')    || '';
+  const pLat        = urlParams.get('lat')        || '';
+  const pLng        = urlParams.get('lng')        || '';
+  const pId         = urlParams.get('placeId')    || '';
+  const pCover      = urlParams.get('coverImage') || '';
+  const pTitle      = urlParams.get('title')      || '';
+
+  if (pName || pAddr || pLat) {
+    // Pre-fill title if provided (from Ticketmaster)
+    if (pTitle) document.getElementById('title').value = pTitle;
+
+    // Pre-fill cover image if provided (from Ticketmaster)
+    if (pCover) document.getElementById('placePhoto').value = pCover;
+
+    // Pre-fill location fields
+    document.getElementById('locationSearch').value            = pName;
+    document.getElementById('selectedLocationText').textContent = pAddr || pName;
+    document.getElementById('selectedLocation').style.display   = 'flex';
+    document.getElementById('placeName').value    = pName;
+    document.getElementById('placeAddress').value = pAddr;
+    document.getElementById('placeLat').value     = pLat;
+    document.getElementById('placeLng').value     = pLng;
+
+    if (pId) {
+      // Google Places — fetch full details with photos
+      document.getElementById('placeId').value = pId;
+      selectPlace(pId);
+    } else if (pLat && pLng) {
+      // Ticketmaster venue — no placeId, show a simple confirmed card
+      document.getElementById('placeId').value = `tm_${pLat}_${pLng}`; // synthetic ID
+      document.getElementById('placeInfoCard').style.display = 'block';
+      document.getElementById('placePhotos').innerHTML = pCover
+        ? `<img src="${pCover}" style="flex:1;object-fit:cover;min-width:0" loading="lazy" />`
+        : `<div class="photo-placeholder" style="flex:1">No photo available</div>`;
+      document.getElementById('placeInfoName').textContent    = pName;
+      document.getElementById('placeInfoAddress').textContent = pAddr;
+      document.getElementById('placeInfoRating').style.display = 'none';
+      document.getElementById('placeInfoSummary').style.display = 'none';
+      document.getElementById('placeInfoHours').style.display   = 'none';
+      document.getElementById('placeInfoMaps').href = `https://www.google.com/maps/search/?api=1&query=${pLat},${pLng}`;
+    }
+  }
+
+  // ─── Character counter ────────────────────────────────────────────────────
+  const desc = document.getElementById('description');
+  const ctr  = document.getElementById('descCount');
+  desc.addEventListener('input', () => ctr.textContent = `${desc.value.length} / 2000`);
+
+  // ─── Places Autocomplete ──────────────────────────────────────────────────
+  let debounceTimer;
+
+  document.getElementById('locationSearch').addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    document.getElementById('placesDropdown').innerHTML = '';
+    if (q.length < 3) return;
+    debounceTimer = setTimeout(() => fetchPredictions(q), 350);
+  });
+
+  async function fetchPredictions(input) {
+    try {
+      const res  = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(input)}`);
+      const data = await res.json();
+      if (!data.success) return;
+      renderDropdown(data.predictions);
+    } catch (e) { console.error(e); }
+  }
+
+  function renderDropdown(predictions) {
+    const dd = document.getElementById('placesDropdown');
+    if (!predictions.length) {
+      dd.innerHTML = '<div class="dd-empty">No locations found</div>';
+      return;
+    }
+    dd.innerHTML = predictions.map(p => `
+      <div class="dd-item" data-place-id="${p.placeId}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <div>
+          <div class="dd-main">${p.mainText}</div>
+          <div class="dd-secondary">${p.secondaryText}</div>
+        </div>
+      </div>
+    `).join('');
+    dd.querySelectorAll('.dd-item').forEach(item => {
+      item.addEventListener('click', () => selectPlace(item.dataset.placeId));
+    });
+  }
+
+  async function selectPlace(placeId) {
+    try {
+      document.getElementById('placesDropdown').innerHTML = '<div class="dd-empty">Loading details...</div>';
+      const res  = await fetch(`/api/places/details?placeId=${placeId}`);
+      const data = await res.json();
+      if (!data.success) return;
+      const p = data.place;
+
+      // Fill hidden fields
+      document.getElementById('placeId').value      = p.placeId;
+      document.getElementById('placeName').value    = p.name;
+      document.getElementById('placeAddress').value = p.address;
+      document.getElementById('placeLat').value     = p.lat;
+      document.getElementById('placeLng').value     = p.lng;
+      document.getElementById('placePhoto').value   = p.coverPhoto || '';
+
+      // Update search input and confirmation
+      document.getElementById('locationSearch').value            = p.name;
+      document.getElementById('selectedLocationText').textContent = p.address;
+      document.getElementById('selectedLocation').style.display  = 'flex';
+      document.getElementById('placesDropdown').innerHTML        = '';
+
+      // Show full place info card with photos
+      showPlaceCard(p);
+    } catch (e) { console.error(e); }
+  }
+
+  function showPlaceCard(p) {
+    const card = document.getElementById('placeInfoCard');
+
+    // Photos
+    const photosEl = document.getElementById('placePhotos');
+    if (p.photos && p.photos.length > 0) {
+      photosEl.innerHTML = p.photos.slice(0, 3).map(ph =>
+        `<img src="${ph.url}" alt="${p.name}" loading="lazy" />`
+      ).join('');
+    } else {
+      photosEl.innerHTML = `<div class="photo-placeholder">No photos available</div>`;
+    }
+
+    // Name & address
+    document.getElementById('placeInfoName').textContent    = p.name;
+    document.getElementById('placeInfoAddress').textContent = p.address;
+
+    // Rating
+    const ratingEl = document.getElementById('placeInfoRating');
+    if (p.rating) {
+      ratingEl.innerHTML = `⭐ ${p.rating} <span style="color:var(--text-faint)">(${p.ratingCount.toLocaleString()})</span>`;
+    } else {
+      ratingEl.style.display = 'none';
+    }
+
+    // Summary
+    const summaryEl = document.getElementById('placeInfoSummary');
+    summaryEl.textContent   = p.summary || '';
+    summaryEl.style.display = p.summary ? 'block' : 'none';
+
+    // Hours
+    const hoursEl = document.getElementById('placeInfoHours');
+    if (p.hours && p.hours.length > 0) {
+      hoursEl.innerHTML = p.hours.map(h => `<span>${h}</span>`).join('');
+    } else {
+      hoursEl.style.display = 'none';
+    }
+
+    // Links
+    document.getElementById('placeInfoMaps').href = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`;
+    const websiteEl = document.getElementById('placeInfoWebsite');
+    if (p.website) {
+      websiteEl.href          = p.website;
+      websiteEl.style.display = 'inline';
+    }
+
+    card.style.display = 'block';
+  }
+
+  function clearLocation() {
+    ['placeId','placeName','placeAddress','placeLat','placeLng','placePhoto'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('locationSearch').value           = '';
+    document.getElementById('selectedLocation').style.display = 'none';
+    document.getElementById('placeInfoCard').style.display    = 'none';
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.places-search-wrap')) {
+      document.getElementById('placesDropdown').innerHTML = '';
+    }
+  });
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('formError');
+    errBox.style.display = 'none';
+
+    if (!document.getElementById('placeId').value) {
+      errBox.textContent   = 'Please select a location from the dropdown.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    // For Ticketmaster venues (synthetic ID), use lat/lng as the placeId
+    let finalPlaceId = document.getElementById('placeId').value;
+    if (finalPlaceId.startsWith('tm_')) {
+      finalPlaceId = `${document.getElementById('placeLat').value},${document.getElementById('placeLng').value}`;
+    }
+
+    const payload = {
+      title:        document.getElementById('title').value.trim(),
+      description:  document.getElementById('description').value.trim(),
+      category:     document.getElementById('category').value,
+      date:         document.getElementById('date').value,
+      endDate:      document.getElementById('endDate').value || undefined,
+      maxAttendees: parseInt(document.getElementById('maxAttendees').value) || 0,
+      isPublic:     document.getElementById('isPublic').checked,
+      coverImage:   document.getElementById('placePhoto').value,
+      tags:         document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean),
+      location: {
+        placeId:  finalPlaceId,
+        name:     document.getElementById('placeName').value,
+        address:  document.getElementById('placeAddress').value,
+        lat:      parseFloat(document.getElementById('placeLat').value),
+        lng:      parseFloat(document.getElementById('placeLng').value),
+      },
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display   = 'none';
+    btn.querySelector('.btn-loader').style.display = 'inline';
+
+    try {
+      const res  = await fetch('/events', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Event created!', 'success');
+        setTimeout(() => window.location.href = `/events/${data.event._id}`, 800);
+      } else {
+        const msg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
+        errBox.textContent   = msg;
+        errBox.style.display = 'block';
+      }
+    } catch (e) {
+      errBox.textContent   = 'Network error. Please try again.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.btn-text').style.display   = 'inline';
+      btn.querySelector('.btn-loader').style.display = 'none';
+    }
+  });
+</script>

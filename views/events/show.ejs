@@ -1,0 +1,221 @@
+<%- include('../partials/header') %>
+
+<main>
+  <!-- Event Header -->
+  <div class="event-hero" style="<%= event.coverImage ? `background-image:url('${event.coverImage}')` : '' %>">
+    <div class="event-hero-overlay"></div>
+    <div class="container event-hero-content">
+      <a href="/explore" class="back-link back-link--light">← Explore</a>
+      <span class="cat-badge cat-badge--<%= event.category.toLowerCase() %>"><%= event.category %></span>
+      <h1 class="event-heading"><%= event.title %></h1>
+      <div class="event-meta-row">
+        <span class="event-meta-item">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <%= new Date(event.date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) %>
+          &nbsp;at&nbsp;
+          <%= new Date(event.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) %>
+        </span>
+        <span class="event-meta-item">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+          <%= event.location.name %>
+        </span>
+        <span class="event-meta-item">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <%= event.attendeeCount %> attending
+          <% if (event.maxAttendees > 0) { %> / <%= event.maxAttendees %> max<% } %>
+        </span>
+        <span class="event-status-badge event-status-badge--<%= event.status %>"><%= event.status %></span>
+      </div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="event-layout">
+        <!-- Main Content -->
+        <div class="event-main">
+          <div class="event-description-card">
+            <h2>About this event</h2>
+            <p class="event-description"><%= event.description %></p>
+            <% if (event.tags && event.tags.length > 0) { %>
+              <div class="event-tags">
+                <% event.tags.forEach(tag => { %><span class="tag">#<%= tag %></span><% }) %>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Attendees -->
+          <div class="event-description-card">
+            <h2>Attendees (<%= event.attendeeCount %>)</h2>
+            <div class="attendees-row">
+              <% event.attendees.slice(0,12).forEach(a => { %>
+                <div class="attendee-avatar" title="<%= a.user ? a.user.name : 'Member' %>">
+                  <% if (a.user && a.user.avatar) { %><img src="<%= a.user.avatar %>" /><% } else if (a.user) { %><%= a.user.name.charAt(0) %><% } %>
+                </div>
+              <% }) %>
+              <% if (event.attendeeCount > 12) { %>
+                <div class="attendee-avatar attendee-avatar--more">+<%= event.attendeeCount - 12 %></div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Discussion (only for attendees) -->
+          <% if (user && (isAttendee || isOrganizer)) { %>
+          <div class="event-description-card" id="discussion">
+            <h2>Discussion</h2>
+            <div class="messages-list" id="messagesList">
+              <div class="messages-loading">Loading messages...</div>
+            </div>
+            <div class="message-input-row">
+              <input type="text" id="msgInput" class="form-input" placeholder="Say something to the group..." maxlength="1000" />
+              <button id="sendMsg" class="btn-primary">Send</button>
+            </div>
+          </div>
+          <% } %>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="event-sidebar">
+          <!-- RSVP Card -->
+          <div class="sidebar-card">
+            <% if (!user) { %>
+              <p class="sidebar-hint">Sign in to join this event</p>
+              <a href="/auth/login?redirect=/events/<%= event._id %>" class="btn-primary btn--full">Sign In to RSVP</a>
+            <% } else if (isOrganizer) { %>
+              <p class="sidebar-organizer-badge">✦ You're the organizer</p>
+              <a href="/events/<%= event._id %>/edit" class="btn-ghost btn--full" style="margin-bottom:8px">Edit Event</a>
+              <button onclick="cancelEvent('<%= event._id %>')" class="btn-danger btn--full">Cancel Event</button>
+            <% } else if (isAttendee) { %>
+              <div class="rsvp-joined">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <span>You're going!</span>
+              </div>
+              <button onclick="leaveEvent('<%= event._id %>')" class="btn-ghost btn--full" style="margin-top:10px">Leave Event</button>
+            <% } else { %>
+              <% if (event.maxAttendees > 0 && event.attendeeCount >= event.maxAttendees) { %>
+                <p class="sidebar-full">This event is full</p>
+              <% } else { %>
+                <button onclick="joinEvent('<%= event._id %>')" class="btn-primary btn--full btn--large" id="joinBtn">Join Event</button>
+                <% if (event.maxAttendees > 0) { %>
+                  <p class="sidebar-spots"><%= event.maxAttendees - event.attendeeCount %> spots remaining</p>
+                <% } %>
+              <% } %>
+            <% } %>
+          </div>
+
+          <!-- Location Card -->
+          <div class="sidebar-card">
+            <h3>Location</h3>
+            <p class="location-name"><%= event.location.name %></p>
+            <p class="location-address"><%= event.location.address %></p>
+            <div id="miniMap" class="mini-map"></div>
+            <a href="https://www.google.com/maps/search/?api=1&query=<%= event.location.lat %>,<%= event.location.lng %>" target="_blank" class="btn-ghost btn--full" style="margin-top:10px">Open in Maps ↗</a>
+          </div>
+
+          <!-- Organizer Card -->
+          <div class="sidebar-card">
+            <h3>Organizer</h3>
+            <div class="organizer-profile">
+              <div class="organizer-avatar-lg">
+                <% if (event.organizer.avatar) { %><img src="<%= event.organizer.avatar %>" /><% } else { %><%= event.organizer.name.charAt(0) %><% } %>
+              </div>
+              <div>
+                <p class="organizer-name"><%= event.organizer.name %></p>
+                <% if (event.organizer.bio) { %><p class="organizer-bio"><%= event.organizer.bio %></p><% } %>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+  // ─── Google Maps mini map ─────────────────────────────────────────────────
+  function initMap() {
+    const loc = { lat: <%= event.location.lat %>, lng: <%= event.location.lng %> };
+    const map = new google.maps.Map(document.getElementById('miniMap'), {
+      zoom: 15, center: loc,
+      styles: [{ elementType:'geometry', stylers:[{color:'#1a1a2e'}] },
+               { elementType:'labels.text.fill', stylers:[{color:'#8b8fa8'}] }],
+    });
+    new google.maps.Marker({ position: loc, map, title: '<%= event.location.name %>' });
+  }
+
+  // ─── RSVP Actions ────────────────────────────────────────────────────────
+  async function joinEvent(id) {
+    const res  = await fetch(`/events/${id}/join`, { method:'POST' });
+    const data = await res.json();
+    if (data.success) { showToast("You're going! 🎉", 'success'); setTimeout(()=>location.reload(),1000); }
+    else showToast(data.message || 'Could not join', 'error');
+  }
+  async function leaveEvent(id) {
+    if (!confirm('Leave this event?')) return;
+    const res  = await fetch(`/events/${id}/leave`, { method:'POST' });
+    const data = await res.json();
+    if (data.success) { showToast('You left the event', 'info'); setTimeout(()=>location.reload(),1000); }
+    else showToast(data.message, 'error');
+  }
+  async function cancelEvent(id) {
+    if (!confirm('Cancel this event? Attendees will be notified.')) return;
+    const res  = await fetch(`/events/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'cancelled'}) });
+    const data = await res.json();
+    if (data.success) { showToast('Event cancelled', 'info'); setTimeout(()=>location.reload(),1000); }
+    else showToast(data.message, 'error');
+  }
+
+  // ─── Messages ────────────────────────────────────────────────────────────
+  <% if (user && (isAttendee || isOrganizer)) { %>
+  async function loadMessages() {
+    const res  = await fetch('/events/<%= event._id %>/messages');
+    const data = await res.json();
+    const list = document.getElementById('messagesList');
+    if (!data.success || !data.messages.length) {
+      list.innerHTML = '<p class="messages-empty">No messages yet. Say hello!</p>'; return;
+    }
+    list.innerHTML = data.messages.map(m => `
+      <div class="message-item">
+        <div class="message-avatar">${m.sender.avatar ? `<img src="${m.sender.avatar}" />` : m.sender.name.charAt(0)}</div>
+        <div class="message-body">
+          <span class="message-author">${m.sender.name}</span>
+          <span class="message-time">${new Date(m.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+          <p class="message-text">${m.content}</p>
+        </div>
+      </div>
+    `).join('');
+    list.scrollTop = list.scrollHeight;
+  }
+
+  document.getElementById('sendMsg').addEventListener('click', async () => {
+    const inp     = document.getElementById('msgInput');
+    const content = inp.value.trim();
+    if (!content) return;
+    const res  = await fetch('/events/<%= event._id %>/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}),
+    });
+    const data = await res.json();
+    if (data.success) { inp.value = ''; loadMessages(); }
+    else showToast(data.message, 'error');
+  });
+
+  document.getElementById('msgInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('sendMsg').click();
+  });
+
+  loadMessages();
+  <% } %>
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=<%= googleApiKey %>&callback=initMap" async defer></script>

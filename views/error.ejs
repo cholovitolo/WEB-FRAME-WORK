@@ -1,0 +1,13 @@
+<%- include('partials/header') %>
+<main class="error-main">
+  <div class="error-content">
+    <span class="error-code"><%= statusCode %></span>
+    <h1 class="error-message"><%= message %></h1>
+    <p>Something went wrong. Let's get you back on track.</p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:32px">
+      <a href="/" class="btn-primary">Go Home</a>
+      <a href="/explore" class="btn-ghost">Explore Events</a>
+    </div>
+  </div>
+</main>
+<%- include('partials/footer') %>

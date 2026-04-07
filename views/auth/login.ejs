@@ -1,0 +1,94 @@
+<%- include('../partials/header') %>
+
+<main class="auth-main">
+  <div class="auth-split">
+    <div class="auth-left">
+      <div class="auth-left-content">
+        <a href="/" class="auth-brand"><span class="brand-dot"></span>GatherSpot</a>
+        <h2>Welcome back to your community.</h2>
+        <p>Events are happening right now. Don't miss out.</p>
+        <div class="auth-decoration"></div>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="auth-box">
+        <h1 class="auth-title">Sign In</h1>
+        <p class="auth-subtitle">New here? <a href="/auth/register">Create an account</a></p>
+
+        <div id="authError" class="alert alert--error" style="display:none"></div>
+
+        <div class="form-group">
+          <label for="email" class="form-label">Email address</label>
+          <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-password-wrap">
+            <input type="password" id="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="toggle-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button id="loginBtn" class="btn-primary btn--full btn--large">
+          <span class="btn-text">Sign In</span>
+          <span class="btn-loader" style="display:none">...</span>
+        </button>
+
+        <div class="auth-divider"><span>or continue as</span></div>
+        <a href="/explore" class="btn-ghost btn--full">Browse Events (no account needed)</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+  // Toggle password visibility
+  document.querySelector('.toggle-password').addEventListener('click', function () {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errBox   = document.getElementById('authError');
+    const btn      = document.getElementById('loginBtn');
+
+    errBox.style.display = 'none';
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-loader').style.display = 'inline';
+
+    try {
+      const res  = await fetch('/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+        window.location.href = redirect;
+      } else {
+        errBox.textContent    = data.message || 'Login failed. Please try again.';
+        errBox.style.display  = 'block';
+      }
+    } catch (e) {
+      errBox.textContent   = 'Network error. Please try again.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.btn-text').style.display = 'inline';
+      btn.querySelector('.btn-loader').style.display = 'none';
+    }
+  });
+</script>

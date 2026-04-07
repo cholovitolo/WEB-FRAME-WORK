@@ -1,0 +1,58 @@
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand-dot"></span>
+      GatherSpot
+      <p>Discover extraordinary events. Build real connections.</p>
+    </div>
+    <div class="footer-links">
+      <a href="/explore">Explore</a>
+      <a href="/events/new">Host an Event</a>
+      <a href="/auth/register">Join</a>
+    </div>
+    <p class="footer-copy">&copy; <%= new Date().getFullYear() %> GatherSpot.</p>
+  </div>
+</footer>
+
+<div id="toast" class="toast" role="alert"></div>
+
+<script>
+  // ─── Logout ──────────────────────────────────────────────────────────────
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await fetch('/auth/logout', { method: 'POST' });
+      window.location.href = '/';
+    });
+  }
+
+  // ─── Mobile nav ───────────────────────────────────────────────────────────
+  const burger = document.getElementById('navBurger');
+  const navLinks = document.querySelector('.nav-links');
+  if (burger) {
+    burger.addEventListener('click', () => {
+      navLinks.classList.toggle('open');
+      burger.classList.toggle('active');
+    });
+  }
+
+  // ─── Nav dropdown ─────────────────────────────────────────────────────────
+  const navUser = document.querySelector('.nav-user');
+  if (navUser) {
+    navUser.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navUser.classList.toggle('open');
+    });
+    document.addEventListener('click', () => navUser.classList.remove('open'));
+  }
+
+  // ─── Toast helper (global) ─────────────────────────────────────────────────
+  window.showToast = (msg, type = 'info') => {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = `toast toast--${type} toast--show`;
+    setTimeout(() => t.classList.remove('toast--show'), 3500);
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand">
+    <span class="brand-dot"></span>
+    GatherSpot
+  </a>
+  <div class="nav-links">
+    <a href="/explore" class="nav-link">Explore</a>
+    <a href="/nearby" class="nav-link">Near Me </a>
+    <% if (user) { %>
+      <a href="/events/new" class="nav-link">Create Event</a>
+      <a href="/dashboard" class="nav-link">Dashboard</a>
+      <div class="nav-user">
+        <div class="nav-avatar" title="<%= user.name %>">
+          <% if (user.avatar) { %>
+            <img src="<%= user.avatar %>" alt="<%= user.name %>" />
+          <% } else { %>
+            <%= user.name.charAt(0).toUpperCase() %>
+          <% } %>
+        </div>
+        <div class="nav-dropdown">
+          <a href="/profile">My Profile</a>
+          <button id="logoutBtn">Sign Out</button>
+        </div>
+      </div>
+    <% } else { %>
+      <a href="/auth/login"    class="nav-link">Sign In</a>
+      <a href="/auth/register" class="btn-primary">Join Free</a>
+    <% } %>
+  </div>
+  <button class="nav-burger" id="navBurger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>

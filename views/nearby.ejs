@@ -1,0 +1,515 @@
+<%- include('partials/header') %>
+
+<main>
+  <section class="page-hero page-hero--sm">
+    <div class="container">
+      <h1 class="page-title">Events Near Me</h1>
+      <p class="page-sub">Discover live events and find the perfect spot to host your own meetup.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <!-- ─── Unified Controls ──────────────────────────────────────────── -->
+      <div class="nearby-controls">
+        <div class="controls-left">
+          <div class="nearby-status">
+            <div class="location-pulse"><span class="pulse-dot" id="pulseDot"></span></div>
+            <span id="statusText">No location set</span>
+          </div>
+          <button id="detectBtn" class="btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+            </svg>
+            Detect Location
+          </button>
+          <div class="manual-location-wrap">
+            <div class="manual-input-field">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <input type="text" id="manualCity" class="form-input" placeholder="Or enter a city..." />
+            </div>
+            <button id="manualSearchBtn" class="btn-ghost">Search</button>
+          </div>
+        </div>
+        <div class="controls-right" id="radiusSelector" style="display:none">
+          <label class="form-label">Radius</label>
+          <div class="radius-pills">
+            <button class="pill" data-km="1"  onclick="setRadius(1)">1 km</button>
+            <button class="pill pill--active" data-km="10" onclick="setRadius(10)">10 km</button>
+            <button class="pill" data-km="25" onclick="setRadius(25)">25 km</button>
+            <button class="pill" data-km="50" onclick="setRadius(50)">50 km</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Loading ───────────────────────────────────────────────────── -->
+      <div id="loadingState" style="display:none">
+        <div class="nearby-loading">
+          <div class="loading-spinner"></div>
+          <p id="loadingText">Finding events and venues near you...</p>
+        </div>
+      </div>
+
+      <!-- ─── All Results ────────────────────────────────────────────────── -->
+      <div id="nearbyResults" style="display:none">
+
+        <!-- Ticketmaster Events -->
+        <div class="nearby-section">
+          <div class="section-header">
+            <div>
+              <span class="section-eyebrow">Powered by Ticketmaster</span>
+              <h2 class="section-title">Live Events Near You</h2>
+            </div>
+            <span id="tmBadge" class="results-badge"></span>
+          </div>
+
+          <!-- TM Filters -->
+          <div class="tm-filters">
+            <div class="tm-filter-group">
+              <span class="filter-label">Category</span>
+              <div class="filter-pills" id="tmCategoryFilter">
+                <button class="pill pill--active" onclick="setTmFilter('category','',this)">All</button>
+                <button class="pill" onclick="setTmFilter('category','Music',this)">🎵 Music</button>
+                <button class="pill" onclick="setTmFilter('category','Sports',this)">⚽ Sports</button>
+                <button class="pill" onclick="setTmFilter('category','Arts & Theatre',this)">🎭 Arts</button>
+                <button class="pill" onclick="setTmFilter('category','Family',this)">👨‍👩‍👧 Family</button>
+                <button class="pill" onclick="setTmFilter('category','Comedy',this)">😂 Comedy</button>
+              </div>
+            </div>
+            <div class="tm-filter-group">
+              <span class="filter-label">Date</span>
+              <div class="filter-pills" id="tmDateFilter">
+                <button class="pill pill--active" onclick="setTmFilter('date','',this)">Any time</button>
+                <button class="pill" onclick="setTmFilter('date','today',this)">Today</button>
+                <button class="pill" onclick="setTmFilter('date','this_week',this)">This week</button>
+                <button class="pill" onclick="setTmFilter('date','this_weekend',this)">Weekend</button>
+                <button class="pill" onclick="setTmFilter('date','this_month',this)">This month</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="tmEvents" class="places-grid" style="margin-top:20px"></div>
+        </div>
+
+        <div class="nearby-divider"><span>✦ Find a venue for your event ✦</span></div>
+
+        <!-- Google Places -->
+        <div class="nearby-section">
+          <div class="section-header">
+            <div>
+              <span class="section-eyebrow">Powered by Google Places</span>
+              <h2 class="section-title">Great Spots to Host an Event</h2>
+            </div>
+            <div class="places-filter-pills" id="placesFilter">
+              <button class="pill pill--active" onclick="filterPlaces('all',this)">All</button>
+              <button class="pill" onclick="filterPlaces('park',this)">Parks</button>
+              <button class="pill" onclick="filterPlaces('cafe',this)">Cafés</button>
+              <button class="pill" onclick="filterPlaces('restaurant',this)">Restaurants</button>
+              <button class="pill" onclick="filterPlaces('library',this)">Libraries</button>
+              <button class="pill" onclick="filterPlaces('gym',this)">Gyms</button>
+            </div>
+          </div>
+          <div id="nearbyPlacesList" class="places-grid"></div>
+        </div>
+
+      </div>
+
+      <!-- ─── Empty State ───────────────────────────────────────────────── -->
+      <div id="emptyState">
+        <div class="empty-state empty-state--large">
+          <svg viewBox="0 0 80 80" width="80" height="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25">
+            <circle cx="40" cy="40" r="35"/>
+            <path d="M40 25c-6 0-10 4-10 10 0 8 10 20 10 20s10-12 10-20c0-6-4-10-10-10z"/>
+            <circle cx="40" cy="35" r="3"/>
+          </svg>
+          <h3>Set your location to get started</h3>
+          <p>Detect your location or type a city to discover events and venues near you.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<%- include('partials/footer') %>
+
+<style>
+.nearby-controls { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:20px 24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:40px; }
+.controls-left  { display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:1; }
+.controls-right { display:flex;align-items:center;gap:10px; }
+.nearby-status  { display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text-muted);white-space:nowrap; }
+.location-pulse { position:relative;width:14px;height:14px; }
+.pulse-dot      { display:block;width:8px;height:8px;border-radius:50%;background:var(--text-faint);position:absolute;top:3px;left:3px;transition:background .3s; }
+.pulse-dot.active { background:var(--green);animation:pulse-ring 1.5s infinite; }
+@keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(76,175,121,0.4)}70%{box-shadow:0 0 0 8px rgba(76,175,121,0)}100%{box-shadow:0 0 0 0 rgba(76,175,121,0)} }
+.manual-location-wrap  { display:flex;align-items:center;gap:8px; }
+.manual-input-field    { position:relative;display:flex;align-items:center; }
+.manual-input-field svg { position:absolute;left:11px;color:var(--text-faint);pointer-events:none; }
+.manual-input-field .form-input { padding-left:34px;padding-top:8px;padding-bottom:8px;width:200px; }
+.radius-pills { display:flex;gap:6px; }
+
+.nearby-loading { text-align:center;padding:60px 20px;color:var(--text-muted); }
+.loading-spinner { width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;margin:0 auto 16px;animation:spin .8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.nearby-section { margin-bottom:60px; }
+.nearby-divider { text-align:center;margin:40px 0;color:var(--text-faint);font-size:0.8rem;letter-spacing:0.1em;position:relative; }
+.nearby-divider::before,.nearby-divider::after { content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border); }
+.nearby-divider::before { left:0; } .nearby-divider::after { right:0; }
+.results-badge { background:var(--gold-glow);border:1px solid rgba(201,168,76,0.2);color:var(--gold-light);font-size:0.78rem;padding:4px 12px;border-radius:100px; }
+.places-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px; }
+
+/* TM Filters */
+.tm-filters { background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;flex-direction:column;gap:12px;margin-bottom:4px; }
+.tm-filter-group { display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
+.filter-label { font-size:0.72rem;font-weight:500;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;min-width:58px; }
+.filter-pills { display:flex;flex-wrap:wrap;gap:6px; }
+
+/* TM Cards */
+.tm-card { background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:all var(--transition);display:flex;flex-direction:column; }
+.tm-card:hover { border-color:var(--border-light);transform:translateY(-3px);box-shadow:var(--shadow-lg); }
+.tm-card-img { height:170px;background:var(--bg-elevated);overflow:hidden;position:relative;flex-shrink:0; }
+.tm-card-img img { width:100%;height:100%;object-fit:cover;transition:transform .4s ease; }
+.tm-card:hover .tm-card-img img { transform:scale(1.04); }
+.tm-card-img .no-img { width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bg-elevated),var(--bg-hover));font-size:2.5rem; }
+.tm-free-badge { position:absolute;top:10px;right:10px;background:rgba(76,175,121,0.25);border:1px solid rgba(76,175,121,0.4);color:#7dd9a5;font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:0.06em; }
+.tm-price-badge { position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.75rem;font-weight:500;padding:4px 10px;border-radius:100px;backdrop-filter:blur(6px); }
+.tm-card-body { padding:16px 18px 18px;flex:1;display:flex;flex-direction:column; }
+.tm-card-cat { font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:6px; }
+.tm-card-title { font-family:var(--font-display);font-size:1.08rem;font-weight:400;color:var(--text);margin-bottom:8px;line-height:1.3; }
+.tm-card-meta { display:flex;flex-direction:column;gap:4px;margin-bottom:10px; }
+.tm-card-meta span { font-size:0.78rem;color:var(--text-faint);display:flex;align-items:center;gap:5px; }
+.tm-card-tags { display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px; }
+.tm-tag { font-size:0.68rem;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-faint);padding:2px 9px;border-radius:100px; }
+.tm-card-actions { display:flex;gap:8px;margin-top:auto; }
+.tm-card-actions .btn-primary,.tm-card-actions .btn-ghost { flex:1;font-size:0.78rem;padding:7px 8px; }
+
+/* Google Place Cards */
+.place-suggest-card { background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:all var(--transition); }
+.place-suggest-card:hover { border-color:var(--border-light);transform:translateY(-3px);box-shadow:var(--shadow-lg); }
+.place-suggest-img { height:160px;background:var(--bg-elevated);overflow:hidden; }
+.place-suggest-img img { width:100%;height:100%;object-fit:cover;transition:transform .4s ease; }
+.place-suggest-card:hover .place-suggest-img img { transform:scale(1.03); }
+.place-suggest-img .no-photo { width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:0.8rem;background:linear-gradient(135deg,var(--bg-elevated),var(--bg-hover)); }
+.place-suggest-body { padding:16px 18px 18px; }
+.place-suggest-name { font-family:var(--font-display);font-size:1.1rem;font-weight:400;margin-bottom:5px;color:var(--text); }
+.place-suggest-address { font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:5px; }
+.place-suggest-meta { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+.place-suggest-rating { display:flex;align-items:center;gap:5px;font-size:0.8rem;color:var(--gold-light); }
+.place-suggest-distance { font-size:0.78rem;color:var(--text-faint);background:var(--bg-elevated);padding:3px 8px;border-radius:100px; }
+.place-suggest-summary { font-size:0.8rem;color:var(--text-muted);line-height:1.5;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+.place-suggest-actions { display:flex;gap:8px; }
+.place-suggest-actions .btn-primary,.place-suggest-actions .btn-ghost { flex:1;font-size:0.8rem;padding:8px 10px; }
+
+@media(max-width:640px){
+  .controls-left { flex-direction:column;align-items:flex-start; }
+  .manual-input-field .form-input { width:160px; }
+}
+</style>
+
+<script>
+  let userLat = null, userLng = null, currentRadius = 10;
+  let allPlaces = [], allTmEvents = [];
+  let tmFilters = { category: '', date: '' };
+  let currentLocationName = '';
+
+  // ─── Detect Location ──────────────────────────────────────────────────────
+  document.getElementById('detectBtn').addEventListener('click', detectLocation);
+
+  function detectLocation() {
+    if (!navigator.geolocation) { updateStatus('Geolocation not supported', false); return; }
+    updateStatus('Detecting...', false);
+    showLoading('Finding events and venues near you...');
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        currentLocationName = `${userLat.toFixed(3)}, ${userLng.toFixed(3)}`;
+        updateStatus('📍 Location found', true);
+        document.getElementById('radiusSelector').style.display = 'flex';
+        await loadAll();
+      },
+      () => {
+        updateStatus('Location denied', false);
+        hideLoading();
+      }
+    );
+  }
+
+  // ─── Manual City Search ───────────────────────────────────────────────────
+  document.getElementById('manualSearchBtn').addEventListener('click', manualSearch);
+  document.getElementById('manualCity').addEventListener('keydown', e => { if (e.key === 'Enter') manualSearch(); });
+
+  async function manualSearch() {
+    const city = document.getElementById('manualCity').value.trim();
+    if (!city) return;
+    updateStatus(`Searching "${city}"...`, false);
+    showLoading(`Finding events in ${city}...`);
+
+    try {
+      const acRes  = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(city)}`);
+      const acData = await acRes.json();
+
+      if (acData.success && acData.predictions.length) {
+        const detRes  = await fetch(`/api/places/details?placeId=${acData.predictions[0].placeId}`);
+        const detData = await detRes.json();
+        if (detData.success) {
+          userLat = detData.place.lat;
+          userLng = detData.place.lng;
+          currentLocationName = detData.place.name;
+          updateStatus(`📍 ${detData.place.name}`, true);
+          document.getElementById('radiusSelector').style.display = 'flex';
+          await loadAll();
+          return;
+        }
+      }
+    } catch(e) { console.error(e); }
+
+    // Fallback — load Ticketmaster by city name directly
+    currentLocationName = city;
+    updateStatus(`📍 ${city}`, true);
+    await Promise.all([loadTmByCity(city), loadPlacesByCity(city)]);
+    hideLoading();
+  }
+
+  function showLoading(text) {
+    document.getElementById('loadingText').textContent    = text;
+    document.getElementById('loadingState').style.display  = 'block';
+    document.getElementById('nearbyResults').style.display = 'none';
+    document.getElementById('emptyState').style.display    = 'none';
+  }
+
+  function hideLoading() {
+    document.getElementById('loadingState').style.display  = 'none';
+    document.getElementById('nearbyResults').style.display = 'block';
+  }
+
+  function updateStatus(text, active) {
+    document.getElementById('statusText').textContent = text;
+    document.getElementById('pulseDot').classList.toggle('active', active);
+  }
+
+  function setRadius(km) {
+    currentRadius = km;
+    document.querySelectorAll('.radius-pills .pill').forEach(p =>
+      p.classList.toggle('pill--active', parseInt(p.dataset.km) === km)
+    );
+    if (userLat) { showLoading('Updating...'); loadAll(); }
+  }
+
+  // ─── Load everything ──────────────────────────────────────────────────────
+  async function loadAll() {
+    await Promise.all([loadTmNearby(), loadPlaces()]);
+    hideLoading();
+  }
+
+  // ─── Ticketmaster by lat/lng ──────────────────────────────────────────────
+  async function loadTmNearby() {
+    try {
+      const res  = await fetch(`/api/ticketmaster/nearby?lat=${userLat}&lng=${userLng}&radius=${currentRadius}&size=20`);
+      const data = await res.json();
+      allTmEvents = data.events || [];
+      document.getElementById('tmBadge').textContent = `${allTmEvents.length} found`;
+      tmFilters = { category: '', date: '' };
+      resetTmFilterPills();
+      applyTmFilters();
+    } catch(e) { console.error(e); }
+  }
+
+  // ─── Ticketmaster by city name (fallback) ────────────────────────────────
+  async function loadTmByCity(city) {
+    try {
+      const res  = await fetch(`/api/ticketmaster/search?city=${encodeURIComponent(city)}&size=20`);
+      const data = await res.json();
+      allTmEvents = data.events || [];
+      document.getElementById('tmBadge').textContent = `${allTmEvents.length} found`;
+      tmFilters = { category: '', date: '' };
+      resetTmFilterPills();
+      applyTmFilters();
+    } catch(e) { console.error(e); }
+  }
+
+  // ─── Google Places by lat/lng ─────────────────────────────────────────────
+  async function loadPlaces() {
+    try {
+      const res  = await fetch(`/api/places/nearby?lat=${userLat}&lng=${userLng}&radius=${currentRadius*1000}&query=venues parks cafes restaurants`);
+      const data = await res.json();
+      allPlaces  = data.places || [];
+      renderPlaces(allPlaces);
+    } catch(e) { console.error(e); }
+  }
+
+  // ─── Google Places by city name (fallback) ───────────────────────────────
+  async function loadPlacesByCity(city) {
+    try {
+      const acRes  = await fetch(`/api/places/autocomplete?input=venues in ${encodeURIComponent(city)}`);
+      const acData = await acRes.json();
+      if (acData.success && acData.predictions.length) {
+        const detRes  = await fetch(`/api/places/details?placeId=${acData.predictions[0].placeId}`);
+        const detData = await detRes.json();
+        if (detData.success) {
+          userLat = detData.place.lat;
+          userLng = detData.place.lng;
+          await loadPlaces();
+        }
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  // ─── TM Filters ───────────────────────────────────────────────────────────
+  function resetTmFilterPills() {
+    document.querySelectorAll('#tmCategoryFilter .pill, #tmDateFilter .pill').forEach(p => p.classList.remove('pill--active'));
+    document.querySelector('#tmCategoryFilter .pill').classList.add('pill--active');
+    document.querySelector('#tmDateFilter .pill').classList.add('pill--active');
+  }
+
+  function setTmFilter(type, val, btn) {
+    tmFilters[type] = val;
+    const groupId = type === 'category' ? 'tmCategoryFilter' : 'tmDateFilter';
+    document.querySelectorAll(`#${groupId} .pill`).forEach(p => p.classList.remove('pill--active'));
+    btn.classList.add('pill--active');
+    applyTmFilters();
+  }
+
+  function applyTmFilters() {
+    let filtered = [...allTmEvents];
+    if (tmFilters.category) {
+      filtered = filtered.filter(e =>
+        (e.category||'').toLowerCase().includes(tmFilters.category.toLowerCase()) ||
+        (e.genre||'').toLowerCase().includes(tmFilters.category.toLowerCase())
+      );
+    }
+    if (tmFilters.date) {
+      const now   = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      filtered = filtered.filter(e => {
+        if (!e.start) return true;
+        const eDate = new Date(e.start + 'T12:00:00');
+        const eDay  = new Date(eDate.getFullYear(), eDate.getMonth(), eDate.getDate());
+        if (tmFilters.date === 'today')        return eDay.getTime() === today.getTime();
+        if (tmFilters.date === 'this_week') {
+          const end = new Date(today); end.setDate(today.getDate()+7);
+          return eDay >= today && eDay <= end;
+        }
+        if (tmFilters.date === 'this_weekend') { const d=eDay.getDay(); return (d===0||d===6)&&eDay>=today; }
+        if (tmFilters.date === 'this_month')   return eDate.getMonth()===now.getMonth()&&eDate.getFullYear()===now.getFullYear();
+        return true;
+      });
+    }
+    const b = document.getElementById('tmBadge');
+    b.textContent = (tmFilters.category || tmFilters.date)
+      ? `${filtered.length} of ${allTmEvents.length} shown`
+      : `${allTmEvents.length} found`;
+    renderTmEvents(filtered);
+  }
+
+  // ─── Render TM Events ─────────────────────────────────────────────────────
+  function renderTmEvents(events) {
+    const c = document.getElementById('tmEvents');
+    if (!events.length) {
+      c.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <h3>No events found</h3>
+        <p>Try adjusting the filters or changing your location.</p>
+      </div>`;
+      return;
+    }
+
+    c.innerHTML = events.map(e => {
+      const price = e.priceMin != null
+        ? (e.priceMin === 0 ? 'Free' : `From ${e.currency} ${e.priceMin}`)
+        : null;
+      const tags  = [e.category, e.genre].filter(t => t && t !== 'Undefined' && t !== 'Undefined');
+      const v     = e.venue;
+
+      // Build full address string for the venue
+      const fullAddress = [v.name, v.address, v.city, v.state].filter(Boolean).join(', ');
+
+      // Build Meetup Here URL — pass all venue info as URL params
+      // The create.ejs will use these to pre-fill the form
+      const p = new URLSearchParams();
+      p.set('placeName', v.name || currentLocationName);
+      p.set('address',   fullAddress);
+      p.set('title',     `Meetup: ${e.title}`);
+      // Pass coords if we have them
+      if (v.lat && v.lng && v.lat !== 0 && v.lng !== 0) {
+        p.set('lat', v.lat);
+        p.set('lng', v.lng);
+      } else if (userLat && userLng) {
+        // Fall back to current location coords
+        p.set('lat', userLat);
+        p.set('lng', userLng);
+      }
+      // Pass the event image for cover photo
+      if (e.logo) p.set('coverImage', e.logo);
+
+      return `
+        <div class="tm-card">
+          <div class="tm-card-img">
+            ${e.logo
+              ? `<img src="${e.logo}" alt="${e.title.replace(/"/g,'&quot;')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="no-img" style="display:none">🎟️</div>`
+              : `<div class="no-img">🎟️</div>`}
+            ${e.isFree ? '<span class="tm-free-badge">Free</span>' : ''}
+            ${price && !e.isFree ? `<span class="tm-price-badge">${price}</span>` : ''}
+          </div>
+          <div class="tm-card-body">
+            <div class="tm-card-cat">${tags.join(' · ') || 'Event'}</div>
+            <div class="tm-card-title">${e.title}</div>
+            <div class="tm-card-meta">
+              ${e.start ? `<span>📅 ${new Date(e.start+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}${e.startTime?` · ${e.startTime.slice(0,5)}`:''}</span>` : ''}
+              ${v.name  ? `<span>📍 ${v.name}${v.city ? ', '+v.city : ''}</span>` : ''}
+            </div>
+            ${tags.length ? `<div class="tm-card-tags">${tags.map(t=>`<span class="tm-tag">#${t.toLowerCase().replace(/[\s&]+/g,'-')}</span>`).join('')}</div>` : ''}
+            <div class="tm-card-actions">
+              <a href="${e.url}" target="_blank" class="btn-primary">Get Tickets ↗</a>
+              <a href="/events/new?${p.toString()}" class="btn-ghost">+ Meetup Here</a>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─── Google Places ────────────────────────────────────────────────────────
+  function renderPlaces(places) {
+    const c = document.getElementById('nearbyPlacesList');
+    if (!places.length) { c.innerHTML = '<p style="color:var(--text-faint)">No venues found in this area.</p>'; return; }
+    c.innerHTML = places.map(p => `
+      <div class="place-suggest-card">
+        <div class="place-suggest-img">
+          ${p.coverPhoto
+            ? `<img src="${p.coverPhoto}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.innerHTML='<div class=no-photo>No photo</div>'" />`
+            : `<div class="no-photo">No photo</div>`}
+        </div>
+        <div class="place-suggest-body">
+          <h3 class="place-suggest-name">${p.name}</h3>
+          <p class="place-suggest-address">📍 ${p.address}</p>
+          <div class="place-suggest-meta">
+            ${p.rating ? `<span class="place-suggest-rating">⭐ ${p.rating} <span style="color:var(--text-faint)">(${(p.ratingCount||0).toLocaleString()})</span></span>` : '<span></span>'}
+            ${p.lat && userLat ? `<span class="place-suggest-distance">${calcDistance(userLat,userLng,p.lat,p.lng)} km</span>` : ''}
+          </div>
+          ${p.summary ? `<p class="place-suggest-summary">${p.summary}</p>` : ''}
+          <div class="place-suggest-actions">
+            <a href="/events/new?placeName=${encodeURIComponent(p.name)}&placeId=${encodeURIComponent(p.placeId)}&lat=${p.lat}&lng=${p.lng}&address=${encodeURIComponent(p.address)}"
+               class="btn-primary">+ Create Event Here</a>
+            <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" class="btn-ghost">Map ↗</a>
+          </div>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  function filterPlaces(type, btn) {
+    document.querySelectorAll('#placesFilter .pill').forEach(p => p.classList.remove('pill--active'));
+    btn.classList.add('pill--active');
+    const filtered = type === 'all' ? allPlaces : allPlaces.filter(p => (p.types||[]).some(t => t.includes(type)));
+    renderPlaces(filtered.length ? filtered : allPlaces);
+  }
+
+  function calcDistance(lat1,lng1,lat2,lng2) {
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(1);
+  }
+</script>

@@ -1,0 +1,87 @@
+<%- include('../partials/header') %>
+<main>
+  <section class="page-hero page-hero--sm">
+    <div class="container">
+      <a href="/events/<%= event._id %>" class="back-link">← Back to event</a>
+      <h1 class="page-title">Edit Event</h1>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container container--narrow">
+      <div id="formError" class="alert alert--error" style="display:none"></div>
+      <div class="form-card">
+        <div class="form-row">
+          <div class="form-group form-group--grow">
+            <label class="form-label">Event Title *</label>
+            <input type="text" id="title" class="form-input" value="<%= event.title %>" maxlength="100" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select id="category" class="form-select">
+              <% categories.forEach(c => { %>
+                <option value="<%= c %>" <%= event.category === c ? 'selected' : '' %>><%= c %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <textarea id="description" class="form-textarea" rows="5" maxlength="2000"><%= event.description %></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group form-group--grow">
+            <label class="form-label">Start Date & Time *</label>
+            <input type="datetime-local" id="date" class="form-input"
+              value="<%= new Date(event.date).toISOString().slice(0,16) %>" required />
+          </div>
+          <div class="form-group form-group--grow">
+            <label class="form-label">Status</label>
+            <select id="status" class="form-select">
+              <% ['upcoming','ongoing','completed','cancelled'].forEach(s => { %>
+                <option value="<%= s %>" <%= event.status === s ? 'selected' : '' %>><%= s %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Attendees <span class="label-hint">(0 = unlimited)</span></label>
+          <input type="number" id="maxAttendees" class="form-input" value="<%= event.maxAttendees %>" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cover Image URL</label>
+          <input type="url" id="coverImage" class="form-input" value="<%= event.coverImage || '' %>" />
+        </div>
+        <div class="form-actions">
+          <a href="/events/<%= event._id %>" class="btn-ghost">Cancel</a>
+          <button id="saveBtn" class="btn-primary btn--large">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<%- include('../partials/footer') %>
+<script>
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const payload = {
+    title:        document.getElementById('title').value.trim(),
+    description:  document.getElementById('description').value.trim(),
+    category:     document.getElementById('category').value,
+    date:         document.getElementById('date').value,
+    status:       document.getElementById('status').value,
+    maxAttendees: parseInt(document.getElementById('maxAttendees').value) || 0,
+    coverImage:   document.getElementById('coverImage').value.trim(),
+  };
+  const res  = await fetch('/events/<%= event._id %>', {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Event updated!', 'success');
+    setTimeout(() => window.location.href = '/events/<%= event._id %>', 800);
+  } else {
+    const errBox = document.getElementById('formError');
+    errBox.textContent   = data.message || 'Update failed';
+    errBox.style.display = 'block';
+  }
+});
+</script>

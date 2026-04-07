@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<main class="auth-main">
+  <div class="auth-split">
+    <div class="auth-left auth-left--register">
+      <div class="auth-left-content">
+        <a href="/" class="auth-brand"><span class="brand-dot"></span>GatherSpot</a>
+        <h2>Join thousands of people discovering events every day.</h2>
+        <ul class="auth-perks">
+          <li>✦ Create &amp; manage your own events</li>
+          <li>✦ Connect with people who share your interests</li>
+          <li>✦ Discover real venues via Google Places</li>
+          <li>✦ Always free to join</li>
+        </ul>
+        <div class="auth-decoration"></div>
+      </div>
+    </div>
+
+    <div class="auth-right">
+      <div class="auth-box">
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Already have one? <a href="/auth/login">Sign in</a></p>
+
+        <div id="authError" class="alert alert--error" style="display:none"></div>
+
+        <div class="form-group">
+          <label for="name" class="form-label">Full name</label>
+          <input type="text" id="name" class="form-input" placeholder="Jane Smith" autocomplete="name" required />
+        </div>
+        <div class="form-group">
+          <label for="email" class="form-label">Email address</label>
+          <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-password-wrap">
+            <input type="password" id="password" class="form-input" placeholder="Min. 8 chars, 1 number" autocomplete="new-password" required />
+            <button type="button" class="toggle-password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="password-strength" id="pwStrength"></div>
+        </div>
+
+        <label class="form-check">
+          <input type="checkbox" id="terms" required />
+          <span>I agree to the <a href="#">Terms of Service</a></span>
+        </label>
+
+        <button id="registerBtn" class="btn-primary btn--full btn--large">
+          <span class="btn-text">Create Account</span>
+          <span class="btn-loader" style="display:none">Creating...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+  document.querySelector('.toggle-password').addEventListener('click', function () {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+
+  // Simple password strength indicator
+  document.getElementById('password').addEventListener('input', function () {
+    const val = this.value;
+    const bar = document.getElementById('pwStrength');
+    let strength = 0;
+    if (val.length >= 8)          strength++;
+    if (/[A-Z]/.test(val))        strength++;
+    if (/[0-9]/.test(val))        strength++;
+    if (/[^A-Za-z0-9]/.test(val)) strength++;
+    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    const colors = ['', '#e74c3c', '#f39c12', '#3498db', '#2ecc71'];
+    bar.style.cssText = `height:3px;border-radius:2px;margin-top:6px;background:${colors[strength]};width:${strength * 25}%;transition:all .3s`;
+    bar.title = labels[strength];
+  });
+
+  document.getElementById('registerBtn').addEventListener('click', async () => {
+    const name     = document.getElementById('name').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const terms    = document.getElementById('terms').checked;
+    const errBox   = document.getElementById('authError');
+    const btn      = document.getElementById('registerBtn');
+
+    errBox.style.display = 'none';
+    if (!terms) { errBox.textContent = 'Please accept the terms to continue.'; errBox.style.display = 'block'; return; }
+
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display  = 'none';
+    btn.querySelector('.btn-loader').style.display = 'inline';
+
+    try {
+      const res  = await fetch('/auth/register', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = '/dashboard';
+      } else {
+        const msg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
+        errBox.textContent   = msg;
+        errBox.style.display = 'block';
+      }
+    } catch (e) {
+      errBox.textContent   = 'Network error. Please try again.';
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.querySelector('.btn-text').style.display   = 'inline';
+      btn.querySelector('.btn-loader').style.display = 'none';
+    }
+  });
+</script>
