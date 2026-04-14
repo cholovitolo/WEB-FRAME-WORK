@@ -74,18 +74,18 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-// ─── Virtual: attendee count ─────────────────────────────────────────────────
+// ─── Virtual: attendee count 
 eventSchema.virtual('attendeeCount').get(function () {
   return this.attendees.length;
 });
 
-// ─── Virtual: spots remaining ─────────────────────────────────────────────────
+// ─── Virtual: spots remaining ────
 eventSchema.virtual('spotsRemaining').get(function () {
   if (this.maxAttendees === 0) return null; // unlimited
   return Math.max(0, this.maxAttendees - this.attendees.length);
 });
 
-// ─── Indexes ─────────────────────────────────────────────────────────────────
+// ─── Indexes ───────
 eventSchema.index({ date: 1 });
 eventSchema.index({ 'location.placeId': 1 });
 eventSchema.index({ organizer: 1 });

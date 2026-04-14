@@ -213,8 +213,15 @@ exports.postMessage = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'You must be an attendee to message in this event' });
     }
 
-    const message    = await Message.create({ event: req.params.id, sender: req.user._id, content: req.body.content });
-    const populated  = await message.populate('sender', 'name avatar');
+    // Save message to MongoDB
+    const message   = await Message.create({ event: req.params.id, sender: req.user._id, content: req.body.content });
+    const populated = await message.populate('sender', 'name avatar');
+
+    
+    // BROADCAST VIA SOCKET.IO
+   
+    const io = req.app.get('io');
+    io.to(req.params.id).emit('receive-message', populated);
 
     res.status(201).json({ success: true, message: populated });
   } catch (err) {

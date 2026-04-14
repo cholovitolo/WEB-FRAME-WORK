@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 
 <main>
-  <!-- Event Header -->
+  <!-- Event Header Banner -->
   <div class="event-hero" style="<%= event.coverImage ? `background-image:url('${event.coverImage}')` : '' %>">
     <div class="event-hero-overlay"></div>
     <div class="container event-hero-content">
@@ -29,7 +29,7 @@
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
-          <%= event.attendeeCount %> attending
+          <%= event.attendees.length %> attending
           <% if (event.maxAttendees > 0) { %> / <%= event.maxAttendees %> max<% } %>
         </span>
         <span class="event-status-badge event-status-badge--<%= event.status %>"><%= event.status %></span>
@@ -40,8 +40,11 @@
   <section class="section">
     <div class="container">
       <div class="event-layout">
+
         <!-- Main Content -->
         <div class="event-main">
+
+          <!-- About -->
           <div class="event-description-card">
             <h2>About this event</h2>
             <p class="event-description"><%= event.description %></p>
@@ -54,36 +57,70 @@
 
           <!-- Attendees -->
           <div class="event-description-card">
-            <h2>Attendees (<%= event.attendeeCount %>)</h2>
+            <h2>Attendees (<%= event.attendees.length %>)</h2>
             <div class="attendees-row">
               <% event.attendees.slice(0,12).forEach(a => { %>
                 <div class="attendee-avatar" title="<%= a.user ? a.user.name : 'Member' %>">
-                  <% if (a.user && a.user.avatar) { %><img src="<%= a.user.avatar %>" /><% } else if (a.user) { %><%= a.user.name.charAt(0) %><% } %>
+                  <% if (a.user && a.user.avatar) { %>
+                    <img src="<%= a.user.avatar %>" />
+                  <% } else if (a.user) { %>
+                    <%= a.user.name.charAt(0) %>
+                  <% } %>
                 </div>
               <% }) %>
-              <% if (event.attendeeCount > 12) { %>
-                <div class="attendee-avatar attendee-avatar--more">+<%= event.attendeeCount - 12 %></div>
+              <% if (event.attendees.length > 12) { %>
+                <div class="attendee-avatar attendee-avatar--more">+<%= event.attendees.length - 12 %></div>
               <% } %>
             </div>
           </div>
 
-          <!-- Discussion (only for attendees) -->
+          <!-- ─── DISCUSSION SECTION (only for attendees and organizer) ─── -->
           <% if (user && (isAttendee || isOrganizer)) { %>
           <div class="event-description-card" id="discussion">
-            <h2>Discussion</h2>
+            <h2>
+              Discussion
+              <!-- Live indicator dot -->
+              <span class="live-badge">
+                <span class="live-dot"></span>
+                Live
+              </span>
+            </h2>
+
+            <!-- Messages appear here -->
             <div class="messages-list" id="messagesList">
               <div class="messages-loading">Loading messages...</div>
             </div>
+
+            <!-- Typing indicator — shown when someone else is typing -->
+            <div id="typingIndicator" class="typing-indicator" style="display:none">
+              <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span id="typingText"></span>
+            </div>
+
+            <!-- Message input -->
             <div class="message-input-row">
-              <input type="text" id="msgInput" class="form-input" placeholder="Say something to the group..." maxlength="1000" />
+              <input
+                type="text"
+                id="msgInput"
+                class="form-input"
+                placeholder="Say something to the group..."
+                maxlength="1000"
+                autocomplete="off"
+              />
               <button id="sendMsg" class="btn-primary">Send</button>
             </div>
           </div>
           <% } %>
+
         </div>
 
         <!-- Sidebar -->
         <aside class="event-sidebar">
+
           <!-- RSVP Card -->
           <div class="sidebar-card">
             <% if (!user) { %>
@@ -102,12 +139,12 @@
               </div>
               <button onclick="leaveEvent('<%= event._id %>')" class="btn-ghost btn--full" style="margin-top:10px">Leave Event</button>
             <% } else { %>
-              <% if (event.maxAttendees > 0 && event.attendeeCount >= event.maxAttendees) { %>
+              <% if (event.maxAttendees > 0 && event.attendees.length >= event.maxAttendees) { %>
                 <p class="sidebar-full">This event is full</p>
               <% } else { %>
-                <button onclick="joinEvent('<%= event._id %>')" class="btn-primary btn--full btn--large" id="joinBtn">Join Event</button>
+                <button onclick="joinEvent('<%= event._id %>')" class="btn-primary btn--full btn--large">Join Event</button>
                 <% if (event.maxAttendees > 0) { %>
-                  <p class="sidebar-spots"><%= event.maxAttendees - event.attendeeCount %> spots remaining</p>
+                  <p class="sidebar-spots"><%= event.maxAttendees - event.attendees.length %> spots remaining</p>
                 <% } %>
               <% } %>
             <% } %>
@@ -119,7 +156,8 @@
             <p class="location-name"><%= event.location.name %></p>
             <p class="location-address"><%= event.location.address %></p>
             <div id="miniMap" class="mini-map"></div>
-            <a href="https://www.google.com/maps/search/?api=1&query=<%= event.location.lat %>,<%= event.location.lng %>" target="_blank" class="btn-ghost btn--full" style="margin-top:10px">Open in Maps ↗</a>
+            <a href="https://www.google.com/maps/search/?api=1&query=<%= event.location.lat %>,<%= event.location.lng %>"
+               target="_blank" class="btn-ghost btn--full" style="margin-top:10px">Open in Maps ↗</a>
           </div>
 
           <!-- Organizer Card -->
@@ -127,14 +165,21 @@
             <h3>Organizer</h3>
             <div class="organizer-profile">
               <div class="organizer-avatar-lg">
-                <% if (event.organizer.avatar) { %><img src="<%= event.organizer.avatar %>" /><% } else { %><%= event.organizer.name.charAt(0) %><% } %>
+                <% if (event.organizer.avatar) { %>
+                  <img src="<%= event.organizer.avatar %>" />
+                <% } else { %>
+                  <%= event.organizer.name.charAt(0) %>
+                <% } %>
               </div>
               <div>
                 <p class="organizer-name"><%= event.organizer.name %></p>
-                <% if (event.organizer.bio) { %><p class="organizer-bio"><%= event.organizer.bio %></p><% } %>
+                <% if (event.organizer.bio) { %>
+                  <p class="organizer-bio"><%= event.organizer.bio %></p>
+                <% } %>
               </div>
             </div>
           </div>
+
         </aside>
       </div>
     </div>
@@ -143,79 +188,338 @@
 
 <%- include('../partials/footer') %>
 
+<!-- Extra styles for chat -->
+<style>
+/* Live badge next to Discussion title */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--green);
+  background: rgba(76,175,121,0.1);
+  border: 1px solid rgba(76,175,121,0.25);
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-left: 12px;
+  vertical-align: middle;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-ring 1.5s infinite;
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  min-height: 28px;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+.typing-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.typing-dots span {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  animation: typing-bounce 0.8s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.30s; }
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%           { transform: translateY(-5px); opacity: 1; }
+}
+</style>
+
+<!-- ─── Google Maps Script ────────────────────────────────────────────────── -->
 <script>
-  // ─── Google Maps mini map ─────────────────────────────────────────────────
   function initMap() {
-    const loc = { lat: <%= event.location.lat %>, lng: <%= event.location.lng %> };
-    const map = new google.maps.Map(document.getElementById('miniMap'), {
-      zoom: 15, center: loc,
-      styles: [{ elementType:'geometry', stylers:[{color:'#1a1a2e'}] },
-               { elementType:'labels.text.fill', stylers:[{color:'#8b8fa8'}] }],
-    });
-    new google.maps.Marker({ position: loc, map, title: '<%= event.location.name %>' });
+    try {
+      const loc = { lat: <%= event.location.lat %>, lng: <%= event.location.lng %> };
+      const map = new google.maps.Map(document.getElementById('miniMap'), {
+        zoom: 15, center: loc,
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+      });
+      new google.maps.Marker({ position: loc, map, title: '<%= event.location.name.replace(/\'/g, "\\'") %>' });
+    } catch(e) {
+      document.getElementById('miniMap').innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-faint);font-size:0.8rem;">Map unavailable</div>';
+    }
+  }
+  function handleMapError() {
+    document.getElementById('miniMap').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-faint);font-size:0.8rem;">Map unavailable</div>';
   }
 
-  // ─── RSVP Actions ────────────────────────────────────────────────────────
+  // ─── RSVP Functions ────────────────────────────────────────────────────────
   async function joinEvent(id) {
-    const res  = await fetch(`/events/${id}/join`, { method:'POST' });
+    const res  = await fetch(`/events/${id}/join`, { method: 'POST' });
     const data = await res.json();
-    if (data.success) { showToast("You're going! 🎉", 'success'); setTimeout(()=>location.reload(),1000); }
+    if (data.success) { showToast("You're going! 🎉", 'success'); setTimeout(() => location.reload(), 1000); }
     else showToast(data.message || 'Could not join', 'error');
   }
+
   async function leaveEvent(id) {
     if (!confirm('Leave this event?')) return;
-    const res  = await fetch(`/events/${id}/leave`, { method:'POST' });
+    const res  = await fetch(`/events/${id}/leave`, { method: 'POST' });
     const data = await res.json();
-    if (data.success) { showToast('You left the event', 'info'); setTimeout(()=>location.reload(),1000); }
-    else showToast(data.message, 'error');
-  }
-  async function cancelEvent(id) {
-    if (!confirm('Cancel this event? Attendees will be notified.')) return;
-    const res  = await fetch(`/events/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:'cancelled'}) });
-    const data = await res.json();
-    if (data.success) { showToast('Event cancelled', 'info'); setTimeout(()=>location.reload(),1000); }
+    if (data.success) { showToast('You left the event', 'info'); setTimeout(() => location.reload(), 1000); }
     else showToast(data.message, 'error');
   }
 
-  // ─── Messages ────────────────────────────────────────────────────────────
-  <% if (user && (isAttendee || isOrganizer)) { %>
+  async function cancelEvent(id) {
+    if (!confirm('Cancel this event?')) return;
+    const res  = await fetch(`/events/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'cancelled' }),
+    });
+    const data = await res.json();
+    if (data.success) { showToast('Event cancelled', 'info'); setTimeout(() => location.reload(), 1000); }
+    else showToast(data.message, 'error');
+  }
+</script>
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=<%= googleApiKey %>&callback=initMap&loading=async"
+  onerror="handleMapError()"
+  async defer>
+</script>
+
+<!-- ─── Socket.io Real-Time Chat (only for attendees and organizer) ───────── -->
+<% if (user && (isAttendee || isOrganizer)) { %>
+
+<!--
+  Step 1: Load the Socket.io client library
+  This file is automatically served by Socket.io on your server
+  It gives us the io() function to use in our JavaScript
+-->
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 1: CONNECT TO THE SERVER
+  // io() creates a live WebSocket connection to our Express server
+  // This connection stays open as long as the page is open
+  // ─────────────────────────────────────────────────────────────────────────
+  const socket = io();
+
+  // Store important values we will use throughout
+  const eventId  = '<%= event._id %>';   // Which event room to join
+  const userName = '<%= user.name %>';   // Current user's name
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 2: JOIN THE EVENT ROOM
+  // Each event has its own private room named after its MongoDB ID
+  // Only people in this room receive messages for this event
+  // ─────────────────────────────────────────────────────────────────────────
+  socket.emit('join-event', eventId);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 3: LOAD EXISTING MESSAGES FROM DATABASE
+  // When you first open the page, fetch all previous messages
+  // These come from MongoDB via a normal HTTP request
+  // ─────────────────────────────────────────────────────────────────────────
   async function loadMessages() {
-    const res  = await fetch('/events/<%= event._id %>/messages');
+    const res  = await fetch(`/events/${eventId}/messages`);
     const data = await res.json();
     const list = document.getElementById('messagesList');
+
     if (!data.success || !data.messages.length) {
-      list.innerHTML = '<p class="messages-empty">No messages yet. Say hello!</p>'; return;
+      list.innerHTML = '<p class="messages-empty">No messages yet. Say hello!</p>';
+      return;
     }
-    list.innerHTML = data.messages.map(m => `
-      <div class="message-item">
-        <div class="message-avatar">${m.sender.avatar ? `<img src="${m.sender.avatar}" />` : m.sender.name.charAt(0)}</div>
-        <div class="message-body">
-          <span class="message-author">${m.sender.name}</span>
-          <span class="message-time">${new Date(m.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
-          <p class="message-text">${m.content}</p>
-        </div>
-      </div>
-    `).join('');
+
+    // Render all existing messages
+    list.innerHTML = data.messages.map(m => buildMessageHTML(m)).join('');
+
+    // Scroll to the bottom so latest message is visible
     list.scrollTop = list.scrollHeight;
   }
 
-  document.getElementById('sendMsg').addEventListener('click', async () => {
-    const inp     = document.getElementById('msgInput');
-    const content = inp.value.trim();
-    if (!content) return;
-    const res  = await fetch('/events/<%= event._id %>/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({content}),
+  // ─────────────────────────────────────────────────────────────────────────
+  // HELPER: BUILD HTML FOR A SINGLE MESSAGE
+  // Takes a message object and returns HTML string
+  // Used for both loading old messages AND displaying new ones
+  // ─────────────────────────────────────────────────────────────────────────
+  function buildMessageHTML(m) {
+    const time = new Date(m.createdAt).toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit'
     });
-    const data = await res.json();
-    if (data.success) { inp.value = ''; loadMessages(); }
-    else showToast(data.message, 'error');
+    const avatar = m.sender.avatar
+      ? `<img src="${m.sender.avatar}" />`
+      : m.sender.name.charAt(0);
+
+    return `
+      <div class="message-item">
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-body">
+          <span class="message-author">${m.sender.name}</span>
+          <span class="message-time">${time}</span>
+          <p class="message-text">${m.content}</p>
+        </div>
+      </div>`;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 4: LISTEN FOR NEW MESSAGES FROM THE SERVER
+  // When ANYONE in this event room sends a message, the server
+  // broadcasts it to everyone — this is where we receive it
+  // No page refresh needed — it just appears automatically
+  // ─────────────────────────────────────────────────────────────────────────
+  socket.on('receive-message', (message) => {
+    const list = document.getElementById('messagesList');
+
+    // Remove the "No messages yet" text if it exists
+    const emptyMsg = list.querySelector('.messages-empty');
+    if (emptyMsg) emptyMsg.remove();
+
+    // Add the new message to the bottom of the list
+    list.insertAdjacentHTML('beforeend', buildMessageHTML(message));
+
+    // Scroll down to show the new message
+    list.scrollTop = list.scrollHeight;
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 5: TYPING INDICATORS
+  //
+  // We use a Set to track WHO is currently typing
+  // A Set is like an array but automatically removes duplicates
+  // Example: typingUsers = { "John", "Sarah" }
+  // ─────────────────────────────────────────────────────────────────────────
+  const typingUsers = new Set();
+  let typingTimer;  // Timer to detect when user stops typing
+
+  // When the user types in the input box
+  document.getElementById('msgInput').addEventListener('input', () => {
+
+    // Tell the server "this user is typing"
+    // The server will forward this to everyone ELSE in the room
+    socket.emit('typing', { eventId, userName });
+
+    // Reset the stop-typing timer every time a key is pressed
+    // If user stops for 2 seconds, we tell server they stopped
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => {
+      socket.emit('stop-typing', { eventId, userName });
+    }, 2000);
+  });
+
+  // When server tells us someone ELSE started typing
+  socket.on('user-typing', ({ userName: name }) => {
+    typingUsers.add(name);        // Add their name to our Set
+    updateTypingDisplay();         // Update what we show on screen
+  });
+
+  // When server tells us someone ELSE stopped typing
+  socket.on('user-stop-typing', ({ userName: name }) => {
+    typingUsers.delete(name);     // Remove their name from our Set
+    updateTypingDisplay();         // Update what we show on screen
+  });
+
+  // Update the typing indicator text based on who is typing
+  function updateTypingDisplay() {
+    const indicator = document.getElementById('typingIndicator');
+    const text      = document.getElementById('typingText');
+    const names     = [...typingUsers]; // Convert Set to Array
+
+    // Nobody typing — hide the indicator
+    if (names.length === 0) {
+      indicator.style.display = 'none';
+      return;
+    }
+
+    // Show the indicator
+    indicator.style.display = 'flex';
+
+    // Build the text based on how many people are typing
+    if (names.length === 1) {
+      // One person: "John is typing..."
+      text.textContent = `${names[0]} is typing...`;
+
+    } else if (names.length === 2) {
+      // Two people: "John and Sarah are typing..."
+      text.textContent = `${names[0]} and ${names[1]} are typing...`;
+
+    } else {
+      // Three or more: "John, Sarah and 2 others are typing..."
+      text.textContent = `${names[0]}, ${names[1]} and ${names.length - 2} others are typing...`;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 6: SEND A MESSAGE
+  // When user clicks Send or presses Enter:
+  // 1. Save the message to MongoDB via normal HTTP POST
+  // 2. The server then broadcasts it to everyone via Socket.io
+  // 3. Everyone's 'receive-message' listener adds it to their screen
+  // ─────────────────────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const input   = document.getElementById('msgInput');
+    const content = input.value.trim();
+
+    // Don't send empty messages
+    if (!content) return;
+
+    // Clear the input immediately so it feels responsive
+    input.value = '';
+
+    // Stop the typing indicator for this user
+    clearTimeout(typingTimer);
+    socket.emit('stop-typing', { eventId, userName });
+
+    // Save message to database via HTTP POST
+    // The controller will emit it via socket after saving
+    try {
+      await fetch(`/events/${eventId}/messages`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ content }),
+      });
+      // No need to manually add message to screen here
+      // socket.on('receive-message') above handles that for everyone
+    } catch(e) {
+      showToast('Could not send message', 'error');
+      input.value = content; // Put the message back if it failed
+    }
+  }
+
+  // Send on button click
+  document.getElementById('sendMsg').addEventListener('click', sendMessage);
+
+  // Send on Enter key press
   document.getElementById('msgInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('sendMsg').click();
+    if (e.key === 'Enter') sendMessage();
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 7: HANDLE DISCONNECTION
+  // When user leaves the page or loses connection
+  // Remove them from all typing indicators
+  // ─────────────────────────────────────────────────────────────────────────
+  socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 8: LOAD MESSAGES WHEN PAGE OPENS
+  // ─────────────────────────────────────────────────────────────────────────
   loadMessages();
-  <% } %>
+
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=<%= googleApiKey %>&callback=initMap" async defer></script>
+<% } %>

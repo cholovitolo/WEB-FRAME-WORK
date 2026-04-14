@@ -49,19 +49,19 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ─── Hash password before save ───────────────────────────────────────────────
+// ─── Hash password before save 
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
   this.password = await bcrypt.hash(this.password, rounds);
 });
 
-// ─── Instance method: compare passwords ──────────────────────────────────────
+// ─── Instance method: compare passwords 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// ─── Remove sensitive fields from JSON output ─────────────────────────────────
+// ─── Remove sensitive fields from JSON output 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;

@@ -2,7 +2,7 @@
 const logger = require('../config/logger');
 
 /**
- * notFound – 404 handler, must be placed after all routes.
+ * notFound – 404 handler.
  */
 const notFound = (req, res, next) => {
   const error = new Error(`Route not found: ${req.originalUrl}`);

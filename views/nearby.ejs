@@ -11,7 +11,7 @@
   <section class="section">
     <div class="container">
 
-      <!-- ─── Unified Controls ──────────────────────────────────────────── -->
+      <!-- ─── Unified Controls ──── -->
       <div class="nearby-controls">
         <div class="controls-left">
           <div class="nearby-status">
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- ─── Loading ───────────────────────────────────────────────────── -->
+      <!-- ─── Loading ────-->
       <div id="loadingState" style="display:none">
         <div class="nearby-loading">
           <div class="loading-spinner"></div>
@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <!-- ─── All Results ────────────────────────────────────────────────── -->
+      <!-- ─── All Results ─── -->
       <div id="nearbyResults" style="display:none">
 
         <!-- Ticketmaster Events -->
@@ -117,7 +117,7 @@
 
       </div>
 
-      <!-- ─── Empty State ───────────────────────────────────────────────── -->
+      <!-- ─── Empty State ──── -->
       <div id="emptyState">
         <div class="empty-state empty-state--large">
           <svg viewBox="0 0 80 80" width="80" height="80" fill="none" stroke="currentColor" stroke-width="1" opacity="0.25">
@@ -215,7 +215,7 @@
   let tmFilters = { category: '', date: '' };
   let currentLocationName = '';
 
-  // ─── Detect Location ──────────────────────────────────────────────────────
+  // ─── Detect Location 
   document.getElementById('detectBtn').addEventListener('click', detectLocation);
 
   function detectLocation() {
@@ -239,7 +239,7 @@
     );
   }
 
-  // ─── Manual City Search ───────────────────────────────────────────────────
+  // ─── Manual City Search 
   document.getElementById('manualSearchBtn').addEventListener('click', manualSearch);
   document.getElementById('manualCity').addEventListener('keydown', e => { if (e.key === 'Enter') manualSearch(); });
 
@@ -300,13 +300,13 @@
     if (userLat) { showLoading('Updating...'); loadAll(); }
   }
 
-  // ─── Load everything ──────────────────────────────────────────────────────
+  // ─── Load everything 
   async function loadAll() {
     await Promise.all([loadTmNearby(), loadPlaces()]);
     hideLoading();
   }
 
-  // ─── Ticketmaster by lat/lng ──────────────────────────────────────────────
+  // ─── Ticketmaster by lat/lng 
   async function loadTmNearby() {
     try {
       const res  = await fetch(`/api/ticketmaster/nearby?lat=${userLat}&lng=${userLng}&radius=${currentRadius}&size=20`);
@@ -319,7 +319,7 @@
     } catch(e) { console.error(e); }
   }
 
-  // ─── Ticketmaster by city name (fallback) ────────────────────────────────
+  // ─── Ticketmaster by city name (fallback)
   async function loadTmByCity(city) {
     try {
       const res  = await fetch(`/api/ticketmaster/search?city=${encodeURIComponent(city)}&size=20`);
@@ -332,7 +332,7 @@
     } catch(e) { console.error(e); }
   }
 
-  // ─── Google Places by lat/lng ─────────────────────────────────────────────
+  // ─── Google Places by lat/lng 
   async function loadPlaces() {
     try {
       const res  = await fetch(`/api/places/nearby?lat=${userLat}&lng=${userLng}&radius=${currentRadius*1000}&query=venues parks cafes restaurants`);
@@ -342,7 +342,7 @@
     } catch(e) { console.error(e); }
   }
 
-  // ─── Google Places by city name (fallback) ───────────────────────────────
+  // ─── Google Places by city name (fallback) 
   async function loadPlacesByCity(city) {
     try {
       const acRes  = await fetch(`/api/places/autocomplete?input=venues in ${encodeURIComponent(city)}`);
@@ -359,7 +359,7 @@
     } catch(e) { console.error(e); }
   }
 
-  // ─── TM Filters ───────────────────────────────────────────────────────────
+  // ─── TM Filters 
   function resetTmFilterPills() {
     document.querySelectorAll('#tmCategoryFilter .pill, #tmDateFilter .pill').forEach(p => p.classList.remove('pill--active'));
     document.querySelector('#tmCategoryFilter .pill').classList.add('pill--active');
@@ -406,7 +406,7 @@
     renderTmEvents(filtered);
   }
 
-  // ─── Render TM Events ─────────────────────────────────────────────────────
+  // ─── Render TM Events 
   function renderTmEvents(events) {
     const c = document.getElementById('tmEvents');
     if (!events.length) {
@@ -471,7 +471,7 @@
     }).join('');
   }
 
-  // ─── Google Places ────────────────────────────────────────────────────────
+  // ─── Google Places 
   function renderPlaces(places) {
     const c = document.getElementById('nearbyPlacesList');
     if (!places.length) { c.innerHTML = '<p style="color:var(--text-faint)">No venues found in this area.</p>'; return; }
